@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import prisma from '../lib/prisma';
+import type { Request, Response } from 'express';
+import prisma from '../lib/prisma.js';
 
 export const getContacts = async (req: Request, res: Response) => {
   try {
@@ -14,7 +14,7 @@ export const getContacts = async (req: Request, res: Response) => {
 
 export const getContactById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const contact = await prisma.contact.findUnique({ where: { id } });
     if (!contact) return res.status(404).json({ message: 'Contact not found' });
     res.json(contact);
@@ -37,7 +37,7 @@ export const createContact = async (req: Request, res: Response) => {
 
 export const updateContact = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { firstName, lastName, email, phone, role, company, notes } = req.body;
     const contact = await prisma.contact.update({
       where: { id },
@@ -51,7 +51,7 @@ export const updateContact = async (req: Request, res: Response) => {
 
 export const deleteContact = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     await prisma.contact.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {

@@ -5,8 +5,8 @@ import {
   createContact,
   updateContact,
   deleteContact,
-} from '../controllers/contactController';
-import { authenticate } from '../middleware/auth';
+} from '../controllers/contactController.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
