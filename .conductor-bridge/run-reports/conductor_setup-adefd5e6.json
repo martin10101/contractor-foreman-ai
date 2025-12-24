@@ -1,0 +1,9 @@
+{
+  "tool": "conductor_setup",
+  "repo_dir": "C:\\\\Users\\\\MLFLL\\\\Downloads\\\\codex-projects\\\\20251224-072257-contractor-foreman-ai",
+  "model": "gemini-3-flash-preview",
+  "session_id": "ae728789-b087-49a9-9ff4-6bb35ad7b5b1",
+  "paused_for_user": true,
+  "quality_gate": null,
+  "review": null
+}
