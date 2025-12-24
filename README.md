@@ -6,6 +6,8 @@ A modular, plan-first construction management web app (Lego-block modules) with 
 
 - Core framework: auth, layout shell, database layer, REST API structure
 - Modules: contacts, projects/job sites, tasks, estimates, invoices/payments, documents, reports
+- Scheduling: calendar events
+- Admin: org invites + role-based access control (RBAC)
 - Planning: persistent Conductor plans live under `conductor/tracks/`
 
 ## Quick start (Windows)
@@ -14,6 +16,7 @@ A modular, plan-first construction management web app (Lego-block modules) with 
 2. Log in with the seeded admin account:
    - `admin@fastbuild.local`
    - `Admin123!`
+3. (Optional) Create an invite in Settings and redeem at `http://localhost:5173/accept-invite`.
 
 This starts:
 - API server: `http://localhost:5000/api/health`
@@ -38,4 +41,5 @@ Frontend:
 
 - Secrets are not committed. `server/.env` is ignored by git.
 - Default local DB is SQLite via driver adapter (`server/.env.example` uses `file:./prisma/dev.db`).
+- File uploads are stored locally under `server/uploads/` (ignored by git).
 - Conductor plans are in `conductor/tracks/` and tracked in `conductor/tracks.md`.
