@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -100,6 +100,10 @@ const Login: React.FC = () => {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           New here? Contact your administrator for access.
+        </p>
+
+        <p className="text-center text-sm text-gray-500 mt-2">
+          Have an invite token? <Link to="/accept-invite" className="text-blue-600 hover:underline">Redeem invite</Link>
         </p>
         
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
