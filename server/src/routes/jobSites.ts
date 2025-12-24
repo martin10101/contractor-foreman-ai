@@ -5,7 +5,7 @@ import {
   updateJobSite,
   deleteJobSite,
 } from '../controllers/jobSiteController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -13,8 +13,8 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', getJobSites);
-router.post('/', createJobSite);
-router.put('/:id', updateJobSite);
-router.delete('/:id', deleteJobSite);
+router.post('/', requireRole(['OWNER', 'ADMIN', 'MANAGER', 'FOREMAN']), createJobSite);
+router.put('/:id', requireRole(['OWNER', 'ADMIN', 'MANAGER']), updateJobSite);
+router.delete('/:id', requireRole(['OWNER', 'ADMIN']), deleteJobSite);
 
 export default router;

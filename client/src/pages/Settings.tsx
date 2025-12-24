@@ -20,6 +20,11 @@ type MeResponse = {
 const Settings: React.FC = () => {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('MEMBER');
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [invites, setInvites] = useState<any[]>([]);
 
   const token = localStorage.getItem('token');
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -48,6 +53,8 @@ const Settings: React.FC = () => {
         }
         const resp = await axios.get('/api/me', { headers });
         setMe(resp.data);
+        const inv = await axios.get('/api/invites', { headers });
+        setInvites(inv.data);
       } catch (error) {
         console.error('Error fetching settings:', error);
       } finally {
@@ -57,6 +64,27 @@ const Settings: React.FC = () => {
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const createInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isDemoMode()) return;
+    try {
+      setInviteLoading(true);
+      const resp = await axios.post(
+        '/api/invites',
+        { email: inviteEmail, role: inviteRole, expiresInDays: 7 },
+        { headers }
+      );
+      setInviteToken(resp.data.token);
+      const inv = await axios.get('/api/invites', { headers });
+      setInvites(inv.data);
+    } catch (error) {
+      console.error('Error creating invite:', error);
+      alert('Error creating invite (need Owner/Admin/Manager role)');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -124,6 +152,82 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
+            <h2 className="text-lg font-bold mb-4">Invites</h2>
+            <p className="text-sm text-gray-500 mb-4">Create an invite token (paste it to the new user for sign-up).</p>
+
+            <form onSubmit={createInvite} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input
+                  type="email"
+                  required
+                  className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Role</label>
+                <select
+                  className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                >
+                  <option value="MEMBER">MEMBER</option>
+                  <option value="FOREMAN">FOREMAN</option>
+                  <option value="ACCOUNTANT">ACCOUNTANT</option>
+                  <option value="MANAGER">MANAGER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+              <button
+                disabled={inviteLoading}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-60"
+              >
+                {inviteLoading ? 'Creating…' : 'Create Invite'}
+              </button>
+            </form>
+
+            {inviteToken && (
+              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="text-sm font-medium text-gray-800 mb-1">Invite token (copy):</div>
+                <div className="font-mono text-xs break-all">{inviteToken}</div>
+                <div className="text-xs text-gray-500 mt-2">
+                  New user can redeem it with `POST /api/invites/accept` (UI coming next).
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6">
+              <div className="text-sm font-medium text-gray-700 mb-2">Recent invites</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="text-gray-500">
+                      <th className="py-2 pr-4">Email</th>
+                      <th className="py-2 pr-4">Role</th>
+                      <th className="py-2 pr-4">Preview</th>
+                      <th className="py-2 pr-4">Expires</th>
+                      <th className="py-2 pr-4">Accepted</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-gray-700">
+                    {invites.map((inv) => (
+                      <tr key={inv.id} className="border-t">
+                        <td className="py-2 pr-4">{inv.email}</td>
+                        <td className="py-2 pr-4 font-mono text-xs">{inv.role}</td>
+                        <td className="py-2 pr-4 font-mono text-xs">{inv.tokenPreview || '—'}</td>
+                        <td className="py-2 pr-4">{new Date(inv.expiresAt).toLocaleString()}</td>
+                        <td className="py-2 pr-4">{inv.acceptedAt ? new Date(inv.acceptedAt).toLocaleString() : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -131,4 +235,3 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
-

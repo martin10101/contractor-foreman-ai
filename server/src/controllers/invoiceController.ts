@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { formatSequenceNumber } from '../lib/numbers.js';
+import PDFDocument from 'pdfkit';
 
 const recalcInvoiceTotalsAndStatus = async (invoiceId: string) => {
   const invoice = await prisma.invoice.findUnique({
@@ -246,5 +247,90 @@ export const addInvoicePayment = async (req: Request, res: Response) => {
     res.status(201).json(payment);
   } catch (error) {
     res.status(500).json({ message: 'Error recording payment' });
+  }
+};
+
+export const markInvoiceSent = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user as { organizationId?: string; id?: string } | undefined;
+    if (!user?.organizationId) return res.status(401).json({ message: 'Authentication required' });
+
+    const { id } = req.params as { id: string };
+    const existing = await prisma.invoice.findFirst({ where: { id, organizationId: user.organizationId } });
+    if (!existing) return res.status(404).json({ message: 'Invoice not found' });
+
+    const updated = await prisma.invoice.update({
+      where: { id: existing.id },
+      data: { status: 'SENT' },
+      include: { project: true, estimate: true, lineItems: true, payments: true },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        actorUserId: user.id ?? null,
+        action: 'SEND',
+        entityType: 'Invoice',
+        entityId: updated.id,
+        summary: `Marked invoice ${updated.number} as sent`,
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Error sending invoice' });
+  }
+};
+
+export const getInvoicePdf = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user as { organizationId?: string } | undefined;
+    if (!user?.organizationId) return res.status(401).json({ message: 'Authentication required' });
+
+    const { id } = req.params as { id: string };
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, organizationId: user.organizationId },
+      include: { project: true, estimate: true, lineItems: true, payments: true },
+    });
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${invoice.number}.pdf"`);
+
+    const doc = new PDFDocument({ margin: 50 });
+    doc.pipe(res);
+
+    doc.fontSize(18).text('Invoice', { align: 'left' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Invoice #: ${invoice.number}`);
+    doc.text(`Project: ${invoice.project?.name || '—'}`);
+    doc.text(`Status: ${invoice.status}`);
+    doc.text(`Issue Date: ${new Date(invoice.issueDate).toLocaleDateString()}`);
+    if (invoice.dueDate) doc.text(`Due Date: ${new Date(invoice.dueDate).toLocaleDateString()}`);
+    doc.moveDown();
+
+    doc.fontSize(12).text('Line Items', { underline: true });
+    doc.moveDown(0.5);
+    invoice.lineItems.forEach((li) => {
+      doc
+        .fontSize(10)
+        .text(
+          `${li.description}  |  qty ${li.quantity}  x  $${li.unitPrice.toFixed(2)}  =  $${li.total.toFixed(2)}`
+        );
+    });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Subtotal: $${(invoice.subtotal || 0).toFixed(2)}`, { align: 'right' });
+    doc.text(`Tax: $${(invoice.taxAmount || 0).toFixed(2)}`, { align: 'right' });
+    doc.fontSize(14).text(`Total: $${(invoice.total || 0).toFixed(2)}`, { align: 'right' });
+
+    const paid = (invoice.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Paid: $${paid.toFixed(2)}`, { align: 'right' });
+    doc.text(`Balance: $${Math.max(0, (invoice.total || 0) - paid).toFixed(2)}`, { align: 'right' });
+
+    doc.end();
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating PDF' });
   }
 };

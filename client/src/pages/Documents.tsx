@@ -22,6 +22,7 @@ const Documents: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [form, setForm] = useState({
     title: '',
     kind: 'Photo',
@@ -79,18 +80,29 @@ const Documents: React.FC = () => {
       return;
     }
     try {
+      let url = form.url;
+      if (fileToUpload) {
+        const fd = new FormData();
+        fd.append('file', fileToUpload);
+        const uploaded = await axios.post('/api/uploads', fd, {
+          headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+        });
+        url = uploaded.data.url;
+      }
+
       await axios.post(
         '/api/documents',
         {
           title: form.title,
           kind: form.kind,
-          url: form.url,
+          url,
           projectId: form.projectId || null,
           contactId: form.contactId || null,
         },
         { headers }
       );
       setShowModal(false);
+      setFileToUpload(null);
       await fetchData();
     } catch (error) {
       console.error('Error creating document:', error);
@@ -226,6 +238,16 @@ const Documents: React.FC = () => {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700">Or Upload File (optional)</label>
+                <input
+                  type="file"
+                  className="mt-1 w-full"
+                  onChange={(e) => setFileToUpload(e.target.files?.[0] || null)}
+                />
+                <p className="text-xs text-gray-400 mt-1">Max 10 MB. Uploaded files are stored locally under `server/uploads/`.</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700">Title</label>
                 <input
                   required
@@ -290,4 +312,3 @@ const Documents: React.FC = () => {
 };
 
 export default Documents;
-

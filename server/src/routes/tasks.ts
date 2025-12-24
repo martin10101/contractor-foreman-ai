@@ -6,7 +6,7 @@ import {
   updateTask,
   deleteTask,
 } from '../controllers/taskController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -15,8 +15,8 @@ router.use(authenticate);
 
 router.get('/', getTasks);
 router.get('/:id', getTaskById);
-router.post('/', createTask);
-router.put('/:id', updateTask);
-router.delete('/:id', deleteTask);
+router.post('/', requireRole(['OWNER', 'ADMIN', 'MANAGER', 'FOREMAN']), createTask);
+router.put('/:id', requireRole(['OWNER', 'ADMIN', 'MANAGER', 'FOREMAN']), updateTask);
+router.delete('/:id', requireRole(['OWNER', 'ADMIN', 'MANAGER']), deleteTask);
 
 export default router;

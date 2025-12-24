@@ -6,7 +6,7 @@ import {
   updateProject,
   deleteProject,
 } from '../controllers/projectController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -15,8 +15,8 @@ router.use(authenticate);
 
 router.get('/', getProjects);
 router.get('/:id', getProjectById);
-router.post('/', createProject);
-router.put('/:id', updateProject);
-router.delete('/:id', deleteProject);
+router.post('/', requireRole(['OWNER', 'ADMIN', 'MANAGER']), createProject);
+router.put('/:id', requireRole(['OWNER', 'ADMIN', 'MANAGER']), updateProject);
+router.delete('/:id', requireRole(['OWNER', 'ADMIN']), deleteProject);
 
 export default router;

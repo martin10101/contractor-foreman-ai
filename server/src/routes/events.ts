@@ -5,7 +5,7 @@ import {
   updateEvent,
   deleteEvent,
 } from '../controllers/eventController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -13,8 +13,8 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', getEvents);
-router.post('/', createEvent);
-router.put('/:id', updateEvent);
-router.delete('/:id', deleteEvent);
+router.post('/', requireRole(['OWNER', 'ADMIN', 'MANAGER', 'FOREMAN']), createEvent);
+router.put('/:id', requireRole(['OWNER', 'ADMIN', 'MANAGER', 'FOREMAN']), updateEvent);
+router.delete('/:id', requireRole(['OWNER', 'ADMIN', 'MANAGER']), deleteEvent);
 
 export default router;

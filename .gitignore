@@ -36,3 +36,4 @@ server/scripts/*.map
 # Local DB (dev)
 server/prisma/*.db
 server/prisma/*.db-journal
+server/uploads/

@@ -9,4 +9,3 @@ router.use(authenticate);
 router.get('/overview', getOverviewReport);
 
 export default router;
-

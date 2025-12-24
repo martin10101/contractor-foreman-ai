@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Users, LayoutDashboard, LogOut, Menu, Briefcase, CheckSquare, FileText, Receipt, FolderOpen, BarChart3, Settings } from 'lucide-react';
+import { Users, LayoutDashboard, LogOut, Menu, Briefcase, CheckSquare, FileText, Receipt, FolderOpen, BarChart3, Settings, CalendarDays, Wrench } from 'lucide-react';
 import { getStoredUser, getUserInitials } from '../lib/session';
 
 const Layout: React.FC = () => {
@@ -42,6 +42,10 @@ const Layout: React.FC = () => {
             <CheckSquare size={20} />
             Tasks
           </Link>
+          <Link to="/calendar" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <CalendarDays size={20} />
+            Calendar
+          </Link>
           <Link to="/estimates" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
             <FileText size={20} />
             Estimates
@@ -49,6 +53,10 @@ const Layout: React.FC = () => {
           <Link to="/invoices" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
             <Receipt size={20} />
             Invoices
+          </Link>
+          <Link to="/change-orders" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <Wrench size={20} />
+            Change Orders
           </Link>
           <Link to="/documents" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
             <FolderOpen size={20} />

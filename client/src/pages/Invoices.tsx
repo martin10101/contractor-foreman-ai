@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Plus, Receipt, DollarSign } from 'lucide-react';
+import { Plus, Receipt, DollarSign, Download, Send } from 'lucide-react';
 import { isDemoMode } from '../lib/session';
 
 type Project = { id: string; name: string };
@@ -120,6 +120,22 @@ const Invoices: React.FC = () => {
     }
   };
 
+  const downloadPdf = (invoiceId: string) => {
+    const url = `/api/invoices/${invoiceId}/pdf`;
+    window.open(url, '_blank', 'noreferrer');
+  };
+
+  const markSent = async (invoiceId: string) => {
+    if (isDemoMode()) return;
+    try {
+      await axios.post(`/api/invoices/${invoiceId}/send`, {}, { headers });
+      await fetchData();
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      alert('Error sending invoice');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -185,16 +201,35 @@ const Invoices: React.FC = () => {
                     <td className="px-6 py-4 text-right font-mono text-sm">${Number(inv.total || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 text-right font-mono text-sm">${paidAmount(inv).toFixed(2)}</td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => {
-                          setShowPay(inv);
-                          setPaymentAmount('0');
-                        }}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
-                      >
-                        <DollarSign size={16} />
-                        Payment
-                      </button>
+                      <div className="inline-flex gap-2">
+                        <button
+                          onClick={() => downloadPdf(inv.id)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                          title="Open PDF"
+                        >
+                          <Download size={16} />
+                          PDF
+                        </button>
+                        <button
+                          onClick={() => markSent(inv.id)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                          title="Mark as sent"
+                        >
+                          <Send size={16} />
+                          Send
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowPay(inv);
+                            setPaymentAmount('0');
+                          }}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+                          title="Record payment"
+                        >
+                          <DollarSign size={16} />
+                          Payment
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -328,4 +363,3 @@ const Invoices: React.FC = () => {
 };
 
 export default Invoices;
-

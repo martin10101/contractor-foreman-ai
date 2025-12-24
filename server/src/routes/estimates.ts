@@ -10,20 +10,20 @@ import {
   updateEstimate,
   updateEstimateLineItem,
 } from '../controllers/estimateController.js';
+import { requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
 router.use(authenticate);
 
 router.get('/', getEstimates);
-router.post('/', createEstimate);
+router.post('/', requireRole(['OWNER', 'ADMIN', 'MANAGER']), createEstimate);
 router.get('/:id', getEstimateById);
-router.put('/:id', updateEstimate);
-router.delete('/:id', deleteEstimate);
+router.put('/:id', requireRole(['OWNER', 'ADMIN', 'MANAGER']), updateEstimate);
+router.delete('/:id', requireRole(['OWNER', 'ADMIN']), deleteEstimate);
 
-router.post('/:estimateId/line-items', addEstimateLineItem);
-router.put('/:estimateId/line-items/:lineItemId', updateEstimateLineItem);
-router.delete('/:estimateId/line-items/:lineItemId', deleteEstimateLineItem);
+router.post('/:estimateId/line-items', requireRole(['OWNER', 'ADMIN', 'MANAGER']), addEstimateLineItem);
+router.put('/:estimateId/line-items/:lineItemId', requireRole(['OWNER', 'ADMIN', 'MANAGER']), updateEstimateLineItem);
+router.delete('/:estimateId/line-items/:lineItemId', requireRole(['OWNER', 'ADMIN']), deleteEstimateLineItem);
 
 export default router;
-

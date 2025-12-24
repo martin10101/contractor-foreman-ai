@@ -12,6 +12,8 @@ import Invoices from './pages/Invoices';
 import Documents from './pages/Documents';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Calendar from './pages/Calendar';
+import ChangeOrders from './pages/ChangeOrders';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -39,6 +41,8 @@ function App() {
           <Route path="tasks" element={<Tasks />} />
           <Route path="estimates" element={<Estimates />} />
           <Route path="invoices" element={<Invoices />} />
+          <Route path="calendar" element={<Calendar />} />
+          <Route path="change-orders" element={<ChangeOrders />} />
           <Route path="documents" element={<Documents />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
