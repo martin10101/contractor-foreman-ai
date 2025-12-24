@@ -10,7 +10,7 @@ $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Start-Process powershell -ArgumentList @(
   "-NoProfile",
   "-Command",
-  "cd `"$root\\server`"; npm run db:setup; npm run dev"
+  "cd `"$root\\server`"; if (-not $env:DATABASE_URL) { $env:DATABASE_URL = 'file:./prisma/dev.db' }; if (-not $env:JWT_SECRET) { $env:JWT_SECRET = 'dev-secret-change-me' }; npm run db:setup; npm run dev"
 )
 
 Start-Process powershell -ArgumentList @(
