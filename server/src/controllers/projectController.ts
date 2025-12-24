@@ -3,7 +3,11 @@ import prisma from '../lib/prisma.js';
 
 export const getProjects = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user as { organizationId?: string } | undefined;
+    if (!user?.organizationId) return res.status(401).json({ message: 'Authentication required' });
+
     const projects = await prisma.project.findMany({
+      where: { organizationId: user.organizationId },
       include: {
         client: true,
         jobSites: true,
@@ -18,9 +22,12 @@ export const getProjects = async (req: Request, res: Response) => {
 
 export const getProjectById = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user as { organizationId?: string } | undefined;
+    if (!user?.organizationId) return res.status(401).json({ message: 'Authentication required' });
+
     const { id } = req.params as { id: string };
-    const project = await prisma.project.findUnique({
-      where: { id },
+    const project = await prisma.project.findFirst({
+      where: { id, organizationId: user.organizationId },
       include: {
         client: true,
         jobSites: true,
@@ -35,9 +42,13 @@ export const getProjectById = async (req: Request, res: Response) => {
 
 export const createProject = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user as { organizationId?: string; id?: string } | undefined;
+    if (!user?.organizationId) return res.status(401).json({ message: 'Authentication required' });
+
     const { name, description, status, startDate, endDate, clientId, jobSites } = req.body;
     
     const data: any = {
+      organizationId: user.organizationId,
       name,
       description,
       status,
@@ -46,6 +57,8 @@ export const createProject = async (req: Request, res: Response) => {
     };
 
     if (clientId) {
+      const contact = await prisma.contact.findFirst({ where: { id: String(clientId), organizationId: user.organizationId } });
+      if (!contact) return res.status(400).json({ message: 'Invalid clientId' });
       data.client = { connect: { id: clientId } };
     }
 
@@ -60,6 +73,18 @@ export const createProject = async (req: Request, res: Response) => {
         jobSites: true,
       },
     });
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        actorUserId: user.id ?? null,
+        action: 'CREATE',
+        entityType: 'Project',
+        entityId: project.id,
+        summary: `Created project ${project.name}`,
+      },
+    });
+
     res.status(201).json(project);
   } catch (error) {
     console.error('Create project error:', error);
@@ -69,9 +94,15 @@ export const createProject = async (req: Request, res: Response) => {
 
 export const updateProject = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user as { organizationId?: string; id?: string } | undefined;
+    if (!user?.organizationId) return res.status(401).json({ message: 'Authentication required' });
+
     const { id } = req.params as { id: string };
     const { name, description, status, startDate, endDate, clientId } = req.body;
     
+    const project = await prisma.project.findFirst({ where: { id, organizationId: user.organizationId } });
+    if (!project) return res.status(404).json({ message: 'Project not found' });
+
     const data: any = {
       name,
       description,
@@ -81,20 +112,34 @@ export const updateProject = async (req: Request, res: Response) => {
     };
 
     if (clientId) {
+      const contact = await prisma.contact.findFirst({ where: { id: String(clientId), organizationId: user.organizationId } });
+      if (!contact) return res.status(400).json({ message: 'Invalid clientId' });
       data.client = { connect: { id: clientId } };
     } else if (clientId === null || clientId === '') {
       data.client = { disconnect: true };
     }
 
-    const project = await prisma.project.update({
-      where: { id },
+    const updated = await prisma.project.update({
+      where: { id: project.id },
       data,
       include: {
         client: true,
         jobSites: true,
       }
     });
-    res.json(project);
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        actorUserId: user.id ?? null,
+        action: 'UPDATE',
+        entityType: 'Project',
+        entityId: updated.id,
+        summary: `Updated project ${updated.name}`,
+      },
+    });
+
+    res.json(updated);
   } catch (error) {
     console.error('Update project error:', error);
     res.status(500).json({ message: 'Error updating project' });
@@ -103,10 +148,25 @@ export const updateProject = async (req: Request, res: Response) => {
 
 export const deleteProject = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user as { organizationId?: string; id?: string } | undefined;
+    if (!user?.organizationId) return res.status(401).json({ message: 'Authentication required' });
+
     const { id } = req.params as { id: string };
-    // Need to handle job sites deletion if not set to cascade in prisma
-    // For now, let's assume we want to delete them or Prisma handles it
-    await prisma.project.delete({ where: { id } });
+    const project = await prisma.project.findFirst({ where: { id, organizationId: user.organizationId } });
+    if (!project) return res.status(404).json({ message: 'Project not found' });
+
+    await prisma.project.delete({ where: { id: project.id } });
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: user.organizationId,
+        actorUserId: user.id ?? null,
+        action: 'DELETE',
+        entityType: 'Project',
+        entityId: project.id,
+        summary: `Deleted project ${project.name}`,
+      },
+    });
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: 'Error deleting project' });

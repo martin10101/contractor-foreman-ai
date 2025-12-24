@@ -25,3 +25,14 @@ server/*.d.ts.map
 server/src/**/*.js
 server/src/**/*.d.ts
 server/src/**/*.map
+server/dist/
+server/prisma/*.js
+server/prisma/*.d.ts
+server/prisma/*.map
+server/scripts/*.js
+server/scripts/*.d.ts
+server/scripts/*.map
+
+# Local DB (dev)
+server/prisma/*.db
+server/prisma/*.db-journal

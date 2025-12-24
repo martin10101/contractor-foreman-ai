@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Search, MoreVertical, Mail, Phone, Building, Trash2, Edit2 } from 'lucide-react';
+import { isDemoMode } from '../lib/session';
 
 interface Contact {
   id: string;
@@ -34,6 +35,20 @@ const Contacts: React.FC = () => {
 
   const fetchContacts = async () => {
     try {
+      if (isDemoMode()) {
+        setContacts([
+          {
+            id: 'demo-contact-1',
+            firstName: 'Leiby',
+            lastName: 'Appel',
+            email: 'leiby@example.com',
+            phone: '555-0101',
+            role: 'Client',
+            company: 'Fast Build',
+          },
+        ]);
+        return;
+      }
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/contacts', {
         headers: { Authorization: `Bearer ${token}` },

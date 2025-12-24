@@ -5,24 +5,28 @@ A modular, plan-first construction management web app (Lego-block modules) with 
 ## What this is
 
 - Core framework: auth, layout shell, database layer, REST API structure
-- Modules: contacts, projects/job sites, scheduling/tasks (more later)
+- Modules: contacts, projects/job sites, tasks, estimates, invoices/payments, documents, reports
 - Planning: persistent Conductor plans live under `conductor/tracks/`
 
 ## Quick start (Windows)
 
-1. Make sure Postgres is running.
-2. In `server/.env`, set `DATABASE_URL` and `JWT_SECRET` (see `server/.env.example`).
-3. Double-click `start-dev.ps1`.
+1. Double-click `start-dev.ps1`.
+2. Log in with the seeded admin account:
+   - `admin@fastbuild.local`
+   - `Admin123!`
 
 This starts:
 - API server: `http://localhost:5000/api/health`
 - Web UI: `http://localhost:5173/login`
+
+The script also auto-runs `server` database setup (`npm run db:setup`) so you don't need to touch Prisma manually.
 
 ## Manual start (any OS)
 
 Backend:
 - `cd server`
 - `npm install`
+- `npm run db:setup`
 - `npm run dev`
 
 Frontend:
@@ -33,4 +37,5 @@ Frontend:
 ## Notes
 
 - Secrets are not committed. `server/.env` is ignored by git.
+- Default local DB is SQLite via driver adapter (`server/.env.example` uses `file:./prisma/dev.db`).
 - Conductor plans are in `conductor/tracks/` and tracked in `conductor/tracks.md`.

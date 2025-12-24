@@ -10,7 +10,7 @@ $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Start-Process powershell -ArgumentList @(
   "-NoProfile",
   "-Command",
-  "cd `"$root\\server`"; npm run dev"
+  "cd `"$root\\server`"; npm run db:setup; npm run dev"
 )
 
 Start-Process powershell -ArgumentList @(
@@ -21,4 +21,3 @@ Start-Process powershell -ArgumentList @(
 
 Start-Sleep -Seconds 2
 Start-Process "http://localhost:$ClientPort/login"
-

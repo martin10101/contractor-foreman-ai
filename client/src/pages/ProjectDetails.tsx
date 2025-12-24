@@ -5,6 +5,7 @@ import {
   ArrowLeft, Calendar, MapPin, Building, User, 
   Plus, Trash2, Edit2, ExternalLink, Briefcase 
 } from 'lucide-react';
+import { isDemoMode } from '../lib/session';
 
 interface JobSite {
   id: string;
@@ -51,6 +52,19 @@ const ProjectDetails: React.FC = () => {
 
   const fetchProject = async () => {
     try {
+      if (isDemoMode()) {
+        setProject({
+          id: id || 'demo-project-1',
+          name: 'Demo Renovation',
+          description: 'This is demo data (backend not configured).',
+          status: 'In Progress',
+          startDate: null,
+          endDate: null,
+          client: null,
+          jobSites: [],
+        });
+        return;
+      }
       const token = localStorage.getItem('token');
       const response = await axios.get(`/api/projects/${id}`, {
         headers: { Authorization: `Bearer ${token}` },

@@ -1,12 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
-
-const { Pool } = pg;
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 const prismaClientSingleton = () => {
-  const url = process.env.DATABASE_URL || '';
-  const adapter = new PrismaPg(new Pool({ connectionString: url }));
+  const url = process.env.DATABASE_URL || 'file:./prisma/dev.db';
+  const filePath = url.startsWith('file:') ? url.replace(/^file:/, '') : url;
+  const adapter = new PrismaBetterSqlite3({ url: filePath });
   return new PrismaClient({ adapter });
 };
 

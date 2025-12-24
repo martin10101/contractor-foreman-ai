@@ -5,6 +5,7 @@ import {
   Trash2, Edit2, ChevronRight, AlertCircle, Clock,
   CheckCircle2, Circle, AlertTriangle
 } from 'lucide-react';
+import { isDemoMode } from '../lib/session';
 
 interface Project {
   id: string;
@@ -58,6 +59,23 @@ const Tasks: React.FC = () => {
 
   const fetchTasks = async () => {
     try {
+      if (isDemoMode()) {
+        setTasks([
+          {
+            id: 'demo-task-1',
+            title: 'Pour concrete footing',
+            description: 'Schedule crew and confirm materials.',
+            status: 'In Progress',
+            priority: 'High',
+            dueDate: null,
+            projectId: 'demo-project-1',
+            project: { id: 'demo-project-1', name: 'Demo Renovation' },
+            assigneeId: null,
+            assignee: null,
+          },
+        ]);
+        return;
+      }
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/tasks', {
         headers: { Authorization: `Bearer ${token}` },
@@ -72,6 +90,10 @@ const Tasks: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
+      if (isDemoMode()) {
+        setProjects([{ id: 'demo-project-1', name: 'Demo Renovation' }]);
+        return;
+      }
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/projects', {
         headers: { Authorization: `Bearer ${token}` },
@@ -84,6 +106,10 @@ const Tasks: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
+      if (isDemoMode()) {
+        setUsers([{ id: 'demo-user-1', firstName: 'Demo', lastName: 'User' }]);
+        return;
+      }
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/users', {
         headers: { Authorization: `Bearer ${token}` },

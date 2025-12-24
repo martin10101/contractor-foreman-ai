@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, BarChart3, Clock, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { getStoredUser, isDemoMode } from '../lib/session';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState([
@@ -13,33 +14,33 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardStats();
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setUserName(user.firstName || 'User');
-      } catch (e) {
-        console.error('Error parsing user from localStorage');
-      }
-    }
+    const user = getStoredUser();
+    if (user?.firstName) setUserName(user.firstName || 'User');
   }, []);
 
   const fetchDashboardStats = async () => {
     try {
+      if (isDemoMode()) {
+        setStats([
+          { label: 'Total Contacts', value: '12', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+          { label: 'Active Projects', value: '3', icon: BarChart3, color: 'text-green-600', bg: 'bg-green-100' },
+          { label: 'Pending Tasks', value: '7', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
+          { label: 'Issues', value: '1', icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100' },
+        ]);
+        return;
+      }
+
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
-      
-      const [contacts, projects, tasks] = await Promise.all([
-        axios.get('/api/contacts', { headers }),
-        axios.get('/api/projects', { headers }),
-        axios.get('/api/tasks', { headers }),
-      ]);
+
+      const report = await axios.get('/api/reports/overview', { headers });
+      const counts = report.data.counts;
 
       setStats([
-        { label: 'Total Contacts', value: contacts.data.length.toString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-        { label: 'Active Projects', value: projects.data.filter((p: any) => p.status === 'In Progress').length.toString(), icon: BarChart3, color: 'text-green-600', bg: 'bg-green-100' },
-        { label: 'Pending Tasks', value: tasks.data.filter((t: any) => t.status !== 'Completed').length.toString(), icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
-        { label: 'Issues', value: tasks.data.filter((t: any) => t.status === 'Blocked').length.toString(), icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100' },
+        { label: 'Total Contacts', value: String(counts.contacts || 0), icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+        { label: 'Active Projects', value: String(counts.activeProjects || 0), icon: BarChart3, color: 'text-green-600', bg: 'bg-green-100' },
+        { label: 'Pending Tasks', value: String(counts.openTasks || 0), icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
+        { label: 'Open Invoices', value: String(counts.openInvoices || 0), icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100' },
       ]);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Search, Briefcase, Calendar, MapPin, Building, Trash2, Edit2, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { isDemoMode } from '../lib/session';
 
 interface JobSite {
   id: string;
@@ -55,6 +56,22 @@ const Projects: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
+      if (isDemoMode()) {
+        setProjects([
+          {
+            id: 'demo-project-1',
+            name: 'Demo Renovation',
+            description: 'Preview project',
+            status: 'In Progress',
+            startDate: null,
+            endDate: null,
+            clientId: null,
+            client: null,
+            jobSites: [],
+          },
+        ]);
+        return;
+      }
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/projects', {
         headers: { Authorization: `Bearer ${token}` },
@@ -69,6 +86,17 @@ const Projects: React.FC = () => {
 
   const fetchContacts = async () => {
     try {
+      if (isDemoMode()) {
+        setContacts([
+          {
+            id: 'demo-contact-1',
+            firstName: 'Leiby',
+            lastName: 'Appel',
+            company: 'Fast Build',
+          },
+        ]);
+        return;
+      }
       const token = localStorage.getItem('token');
       const response = await axios.get('/api/contacts', {
         headers: { Authorization: `Bearer ${token}` },

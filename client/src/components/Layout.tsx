@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Users, LayoutDashboard, LogOut, Menu, Briefcase, CheckSquare } from 'lucide-react';
+import { Users, LayoutDashboard, LogOut, Menu, Briefcase, CheckSquare, FileText, Receipt, FolderOpen, BarChart3, Settings } from 'lucide-react';
+import { getStoredUser, getUserInitials } from '../lib/session';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
+  const user = getStoredUser();
+  const initials = getUserInitials(user);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -39,6 +42,26 @@ const Layout: React.FC = () => {
             <CheckSquare size={20} />
             Tasks
           </Link>
+          <Link to="/estimates" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <FileText size={20} />
+            Estimates
+          </Link>
+          <Link to="/invoices" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <Receipt size={20} />
+            Invoices
+          </Link>
+          <Link to="/documents" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <FolderOpen size={20} />
+            Documents
+          </Link>
+          <Link to="/reports" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <BarChart3 size={20} />
+            Reports
+          </Link>
+          <Link to="/settings" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <Settings size={20} />
+            Settings
+          </Link>
         </nav>
         <div className="absolute bottom-0 w-64 p-4 border-t border-slate-800">
           <button 
@@ -62,7 +85,7 @@ const Layout: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-               JD
+               {initials}
              </div>
           </div>
         </header>

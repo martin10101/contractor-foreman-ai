@@ -10,7 +10,71 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MANAGER
+  FOREMAN
+  ACCOUNTANT
+  MEMBER
+}
+
+enum EstimateStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  CARD
+  ACH
+  WIRE
+  OTHER
+}
+
+model Organization {
+  id          String       @id @default(uuid())
+  name        String
+  memberships Membership[]
+  contacts    Contact[]
+  projects    Project[]
+  events      Event[]
+  estimates   Estimate[]
+  invoices    Invoice[]
+  documents   Document[]
+  auditLogs   AuditLog[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Membership {
+  id             String        @id @default(uuid())
+  userId         String
+  organizationId String
+  role           OrgRole       @default(MEMBER)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, role])
 }
 
 model User {
@@ -20,12 +84,15 @@ model User {
   firstName String?
   lastName  String?
   tasks     Task[]
+  memberships Membership[]
+  auditLogs  AuditLog[] @relation("AuditLogActor")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Contact {
   id        String    @id @default(uuid())
+  organizationId String
   firstName String
   lastName  String
   email     String?
@@ -34,12 +101,17 @@ model Contact {
   company   String?
   notes     String?
   projects  Project[] @relation("ProjectClient")
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents Document[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([organizationId, lastName, firstName])
 }
 
 model Project {
   id          String    @id @default(uuid())
+  organizationId String
   name        String
   description String?
   status      String    @default("Planning") // Planning, In Progress, Completed, On Hold
@@ -50,8 +122,14 @@ model Project {
   jobSites    JobSite[]
   tasks       Task[]
   events      Event[]
+  estimates   Estimate[]
+  invoices    Invoice[]
+  documents   Document[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([organizationId, status])
 }
 
 model JobSite {
@@ -83,16 +161,152 @@ model Task {
   assignee    User?     @relation(fields: [assigneeId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([projectId, status])
 }
 
 model Event {
   id          String   @id @default(uuid())
+  organizationId String
   title       String
   description String?
   startTime   DateTime
   endTime     DateTime
   projectId   String?
   project     Project? @relation(fields: [projectId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([organizationId, startTime])
+}
+
+model Estimate {
+  id             String         @id @default(uuid())
+  organizationId String
+  projectId      String
+  number         String
+  title          String
+  status         EstimateStatus @default(DRAFT)
+  taxRate        Float          @default(0)
+  subtotal       Float          @default(0)
+  taxAmount      Float          @default(0)
+  total          Float          @default(0)
+  notes          String?
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lineItems      EstimateLineItem[]
+  invoices       Invoice[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([projectId])
+}
+
+model EstimateLineItem {
+  id          String   @id @default(uuid())
+  estimateId  String
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0)
+  total       Float    @default(0)
+  estimate    Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([estimateId])
+}
+
+model Invoice {
+  id             String        @id @default(uuid())
+  organizationId String
+  projectId      String
+  estimateId     String?
+  number         String
+  status         InvoiceStatus @default(DRAFT)
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime?
+  taxRate        Float         @default(0)
+  subtotal       Float         @default(0)
+  taxAmount      Float         @default(0)
+  total          Float         @default(0)
+  notes          String?
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  estimate       Estimate?     @relation(fields: [estimateId], references: [id], onDelete: SetNull)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lineItems      InvoiceLineItem[]
+  payments       Payment[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([projectId])
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0)
+  total       Float    @default(0)
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([invoiceId])
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  invoiceId   String
+  amount      Float
+  method      PaymentMethod @default(OTHER)
+  paidAt      DateTime      @default(now())
+  notes       String?
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([invoiceId])
+}
+
+model Document {
+  id             String        @id @default(uuid())
+  organizationId String
+  title          String
+  kind           String?
+  url            String?
+  notes          String?
+  projectId      String?
+  contactId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  contact        Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([contactId])
+}
+
+model AuditLog {
+  id             String        @id @default(uuid())
+  organizationId String
+  actorUserId    String?
+  action         String
+  entityType     String
+  entityId       String?
+  summary        String?
+  metadata       String?
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actorUser      User?         @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
 }

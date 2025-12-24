@@ -28,6 +28,10 @@ const Login: React.FC = () => {
     try {
       const response = await axios.post('/api/auth/login', { email, password });
       localStorage.setItem('token', response.data.token);
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      localStorage.removeItem('demoMode');
       navigate('/');
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed';
