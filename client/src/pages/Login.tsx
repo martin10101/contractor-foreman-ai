@@ -8,6 +8,21 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const startDemo = (providedEmail?: string) => {
+    const safeEmail = (providedEmail || 'demo@example.com').trim() || 'demo@example.com';
+    localStorage.setItem('token', 'demo-token');
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        firstName: 'Demo',
+        lastName: 'User',
+        email: safeEmail,
+      })
+    );
+    localStorage.setItem('demoMode', 'true');
+    navigate('/');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -15,7 +30,16 @@ const Login: React.FC = () => {
       localStorage.setItem('token', response.data.token);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      const message = err.response?.data?.message || 'Login failed';
+      const status = err.response?.status;
+
+      if (!status || status >= 500) {
+        setError('Backend not set up yet. Starting in demo mode so you can preview the app.');
+        startDemo(email);
+        return;
+      }
+
+      setError(message);
     }
   };
 
@@ -59,6 +83,14 @@ const Login: React.FC = () => {
             className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors mt-2"
           >
             Sign In
+          </button>
+
+          <button
+            type="button"
+            onClick={() => startDemo(email)}
+            className="w-full border border-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Continue in Demo Mode
           </button>
         </form>
 
