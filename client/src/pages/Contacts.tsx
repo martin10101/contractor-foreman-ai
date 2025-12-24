@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, MoreVertical, Mail, Phone, Building } from 'lucide-react';
+import { Plus, Search, MoreVertical, Mail, Phone, Building, Trash2, Edit2 } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -16,7 +16,8 @@ const Contacts: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [newContact, setNewContact] = useState({
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
@@ -24,6 +25,8 @@ const Contacts: React.FC = () => {
     role: '',
     company: '',
   });
+
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchContacts();
@@ -43,18 +46,60 @@ const Contacts: React.FC = () => {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const filteredContacts = contacts.filter(contact => {
+    const searchStr = `${contact.firstName} ${contact.lastName} ${contact.company} ${contact.role} ${contact.email}`.toLowerCase();
+    return searchStr.includes(searchTerm.toLowerCase());
+  });
+
+  const handleOpenCreate = () => {
+    setEditingContact(null);
+    setFormData({ firstName: '', lastName: '', email: '', phone: '', role: '', company: '' });
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (contact: Contact) => {
+    setEditingContact(contact);
+    setFormData({
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      role: contact.role || '',
+      company: contact.company || '',
+    });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/contacts', newContact, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (editingContact) {
+        await axios.put(`/api/contacts/${editingContact.id}`, formData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await axios.post('/api/contacts', formData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
       setShowModal(false);
-      setNewContact({ firstName: '', lastName: '', email: '', phone: '', role: '', company: '' });
       fetchContacts();
     } catch (error) {
-      console.error('Error creating contact:', error);
+      console.error('Error saving contact:', error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this contact?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/contacts/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchContacts();
+    } catch (error) {
+      console.error('Error deleting contact:', error);
     }
   };
 
@@ -66,7 +111,7 @@ const Contacts: React.FC = () => {
           <p className="text-gray-500">Manage your subcontractors, clients, and suppliers.</p>
         </div>
         <button 
-          onClick={() => setShowModal(true)}
+          onClick={handleOpenCreate}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
         >
           <Plus size={20} />
@@ -80,8 +125,10 @@ const Contacts: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 
               type="text" 
-              placeholder="Search contacts..." 
+              placeholder="Search contacts by name, company, or email..." 
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -99,9 +146,9 @@ const Contacts: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr><td colSpan={4} className="px-6 py-10 text-center text-gray-500">Loading contacts...</td></tr>
-              ) : contacts.length === 0 ? (
-                <tr><td colSpan={4} className="px-6 py-10 text-center text-gray-500">No contacts found. Add your first one!</td></tr>
-              ) : contacts.map((contact) => (
+              ) : filteredContacts.length === 0 ? (
+                <tr><td colSpan={4} className="px-6 py-10 text-center text-gray-500">{searchTerm ? 'No contacts match your search.' : 'No contacts found. Add your first one!'}</td></tr>
+              ) : filteredContacts.map((contact) => (
                 <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-semibold text-gray-900">{contact.firstName} {contact.lastName}</div>
@@ -124,9 +171,22 @@ const Contacts: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <MoreVertical size={20} />
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => handleOpenEdit(contact)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit Contact"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(contact.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Contact"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -135,21 +195,21 @@ const Contacts: React.FC = () => {
         </div>
       </div>
 
-      {/* Basic Modal Implementation */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6">
-            <h2 className="text-xl font-bold mb-4">Add New Contact</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <h2 className="text-xl font-bold mb-4">{editingContact ? 'Edit Contact' : 'Add New Contact'}</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">First Name</label>
                   <input 
                     required
                     type="text" 
-                    className="mt-1 w-full border rounded-lg px-3 py-2"
-                    value={newContact.firstName}
-                    onChange={(e) => setNewContact({...newContact, firstName: e.target.value})}
+                    className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                   />
                 </div>
                 <div>
@@ -157,9 +217,9 @@ const Contacts: React.FC = () => {
                   <input 
                     required
                     type="text" 
-                    className="mt-1 w-full border rounded-lg px-3 py-2"
-                    value={newContact.lastName}
-                    onChange={(e) => setNewContact({...newContact, lastName: e.target.value})}
+                    className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                   />
                 </div>
               </div>
@@ -167,18 +227,18 @@ const Contacts: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Email</label>
                 <input 
                   type="email" 
-                  className="mt-1 w-full border rounded-lg px-3 py-2"
-                  value={newContact.email}
-                  onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                  className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Phone</label>
                 <input 
                   type="text" 
-                  className="mt-1 w-full border rounded-lg px-3 py-2"
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
+                  className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -186,9 +246,9 @@ const Contacts: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700">Company</label>
                   <input 
                     type="text" 
-                    className="mt-1 w-full border rounded-lg px-3 py-2"
-                    value={newContact.company}
-                    onChange={(e) => setNewContact({...newContact, company: e.target.value})}
+                    className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.company}
+                    onChange={(e) => setFormData({...formData, company: e.target.value})}
                   />
                 </div>
                 <div>
@@ -196,25 +256,25 @@ const Contacts: React.FC = () => {
                   <input 
                     type="text" 
                     placeholder="e.g. Subcontractor"
-                    className="mt-1 w-full border rounded-lg px-3 py-2"
-                    value={newContact.role}
-                    onChange={(e) => setNewContact({...newContact, role: e.target.value})}
+                    className="mt-1 w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.role}
+                    onChange={(e) => setFormData({...formData, role: e.target.value})}
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <button 
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                 >
-                  Save Contact
+                  {editingContact ? 'Update Contact' : 'Save Contact'}
                 </button>
               </div>
             </form>
@@ -224,5 +284,6 @@ const Contacts: React.FC = () => {
     </div>
   );
 };
+
 
 export default Contacts;

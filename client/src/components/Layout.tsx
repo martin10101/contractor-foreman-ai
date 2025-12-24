@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Users, LayoutDashboard, LogOut, Menu } from 'lucide-react';
+import { Users, LayoutDashboard, LogOut, Menu, Briefcase, CheckSquare } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +28,14 @@ const Layout: React.FC = () => {
           <Link to="/contacts" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
             <Users size={20} />
             Contacts
+          </Link>
+          <Link to="/projects" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <Briefcase size={20} />
+            Projects
+          </Link>
+          <Link to="/tasks" className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-slate-800 rounded-lg transition-colors">
+            <CheckSquare size={20} />
+            Tasks
           </Link>
         </nav>
         <div className="absolute bottom-0 w-64 p-4 border-t border-slate-800">

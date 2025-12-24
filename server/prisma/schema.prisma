@@ -18,12 +18,13 @@ model User {
   password  String
   firstName String?
   lastName  String?
+  tasks     Task[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Contact {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   firstName String
   lastName  String
   email     String?
@@ -31,6 +32,66 @@ model Contact {
   role      String? // e.g., Subcontractor, Client, Supplier
   company   String?
   notes     String?
+  projects  Project[] @relation("ProjectClient")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  status      String    @default("Planning") // Planning, In Progress, Completed, On Hold
+  startDate   DateTime?
+  endDate     DateTime?
+  clientId    String?
+  client      Contact?  @relation("ProjectClient", fields: [clientId], references: [id])
+  jobSites    JobSite[]
+  tasks       Task[]
+  events      Event[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model JobSite {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  state     String
+  zipCode   String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      String    @default("To Do") // To Do, In Progress, Completed, Blocked
+  priority    String    @default("Medium") // Low, Medium, High, Critical
+  dueDate     DateTime?
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id])
+  jobSiteId   String?
+  jobSite     JobSite?  @relation(fields: [jobSiteId], references: [id])
+  assigneeId  String?
+  assignee    User?     @relation(fields: [assigneeId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
